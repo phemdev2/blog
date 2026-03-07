@@ -13,6 +13,8 @@ export interface Post {
   created_at: string;
   user_id: string;
   views: number;
+  date: string;
+  readTime: string;
 }
 
 export interface SiteConfig {
