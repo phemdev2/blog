@@ -20,8 +20,8 @@ export default async function EditPostPage({ params }: EditPostPageProps) {
   if (!post) notFound();
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold text-white mb-8">Edit Post</h1>
+    <div className="p-4 sm:p-8">
+      <h1 className="text-xl sm:text-2xl font-bold text-white mb-6 sm:mb-8">Edit Post</h1>
       <PostForm post={post} />
     </div>
   );

@@ -64,13 +64,10 @@ export function PostForm({ post }: PostFormProps) {
   async function uploadImage(file: File, userId: string): Promise<string> {
     const ext = file.name.split(".").pop();
     const path = `${userId}/${Date.now()}.${ext}`;
-
     const { error } = await supabase.storage
       .from("post-images")
       .upload(path, file, { upsert: true });
-
     if (error) throw new Error(error.message);
-
     const { data } = supabase.storage.from("post-images").getPublicUrl(path);
     return data.publicUrl;
   }
@@ -93,7 +90,6 @@ export function PostForm({ post }: PostFormProps) {
 
     let imageUrl = coverImage;
 
-    // Upload image if a new one was selected
     if (imageFile) {
       setUploading(true);
       try {
@@ -112,7 +108,10 @@ export function PostForm({ post }: PostFormProps) {
       slug,
       excerpt,
       content: content.split("\n\n").map((p) => p.trim()).filter(Boolean),
-      content_html: `<div style="text-align:${alignment}">${content.split("\n\n").map((p) => `<p>${p.trim()}</p>`).join("")}</div>`,
+      content_html: `<div style="text-align:${alignment}">${content
+        .split("\n\n")
+        .map((p) => `<p>${p.trim()}</p>`)
+        .join("")}</div>`,
       author,
       category,
       read_time: calculateReadTime(content),
@@ -142,18 +141,21 @@ export function PostForm({ post }: PostFormProps) {
     { value: "justify", icon: <AlignJustify className="h-4 w-4" /> },
   ];
 
+  const inputClass =
+    "w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full max-w-2xl space-y-5">
 
       {/* Cover Image */}
       <div>
-        <label className="block text-sm text-gray-400 mb-1">Cover Image</label>
+        <label className="block text-sm text-gray-400 mb-2">Cover Image</label>
         {imagePreview ? (
           <div className="relative rounded-xl overflow-hidden border border-gray-700">
-            <img src={imagePreview} alt="Cover" className="w-full h-48 object-cover" />
+            <img src={imagePreview} alt="Cover" className="w-full h-44 sm:h-48 object-cover" />
             <button
               onClick={removeImage}
-              className="absolute top-2 right-2 bg-gray-900 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
+              className="absolute top-2 right-2 bg-gray-900 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>
@@ -161,17 +163,15 @@ export function PostForm({ post }: PostFormProps) {
         ) : (
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="w-full border-2 border-dashed border-gray-700 rounded-xl py-8 flex flex-col items-center gap-2 text-gray-500 hover:border-gray-500 hover:text-gray-400 transition-colors"
+            className="w-full border-2 border-dashed border-gray-700 rounded-xl py-10 flex flex-col items-center gap-2 text-gray-500 hover:border-gray-500 hover:text-gray-400 transition-colors active:bg-gray-900"
           >
-            <ImagePlus className="h-6 w-6" />
-            <span className="text-sm">Click to upload cover image</span>
+            <ImagePlus className="h-7 w-7" />
+            <span className="text-sm">Tap to upload cover image</span>
             <span className="text-xs text-gray-600">PNG, JPG, WEBP up to 5MB</span>
           </button>
         )}
         <input
           ref={fileInputRef}
-          id="cover-image"
-          name="cover-image"
           type="file"
           accept="image/*"
           onChange={handleImageSelect}
@@ -181,51 +181,49 @@ export function PostForm({ post }: PostFormProps) {
 
       {/* Title */}
       <div>
-        <label htmlFor="title" className="block text-sm text-gray-400 mb-1">Title *</label>
+        <label className="block text-sm text-gray-400 mb-2">Title *</label>
         <input
-          id="title"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="Post title"
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className={inputClass}
         />
       </div>
 
       {/* Permalink */}
       <div>
-        <label htmlFor="slug" className="block text-sm text-gray-400 mb-1">Permalink</label>
+        <label className="block text-sm text-gray-400 mb-2">Permalink</label>
         <div className="flex items-center gap-2">
-          <span className="text-gray-500 text-sm">/post/</span>
+          <span className="text-gray-500 text-sm whitespace-nowrap">/post/</span>
           <input
-            id="slug"
-            name="slug"
             value={slug}
             onChange={(e) => setSlug(slugify(e.target.value))}
             placeholder="post-permalink"
-            className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputClass}
           />
         </div>
       </div>
 
       {/* Excerpt */}
       <div>
-        <label htmlFor="excerpt" className="block text-sm text-gray-400 mb-1">Excerpt</label>
+        <label className="block text-sm text-gray-400 mb-2">Excerpt</label>
         <textarea
-          id="excerpt"
-          name="excerpt"
           value={excerpt}
           onChange={(e) => setExcerpt(e.target.value)}
           placeholder="Short description of the post..."
           rows={3}
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className={`${inputClass} resize-none`}
         />
       </div>
 
-      {/* Content + Alignment */}
+      {/* Content */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label htmlFor="content" className="block text-sm text-gray-400">
-            Content * <span className="text-gray-600">(separate paragraphs with a blank line)</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <label className="text-sm text-gray-400">
+            Content *{" "}
+            <span className="text-gray-600 text-xs hidden sm:inline">
+              (blank line = new paragraph)
+            </span>
           </label>
           {/* Alignment toolbar */}
           <div className="flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-lg p-1">
@@ -233,7 +231,7 @@ export function PostForm({ post }: PostFormProps) {
               <button
                 key={value}
                 onClick={() => setAlignment(value)}
-                className={`p-1.5 rounded transition-colors ${
+                className={`p-2 rounded transition-colors ${
                   alignment === value
                     ? "bg-white text-gray-950"
                     : "text-gray-400 hover:text-white"
@@ -247,14 +245,12 @@ export function PostForm({ post }: PostFormProps) {
         </div>
 
         <textarea
-          id="content"
-          name="content"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder="Write your post content here..."
-          rows={12}
+          rows={14}
           style={{ textAlign: alignment }}
-          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className={`${inputClass} resize-none leading-relaxed`}
         />
         {content && (
           <p className="text-xs text-gray-500 mt-1">
@@ -263,28 +259,24 @@ export function PostForm({ post }: PostFormProps) {
         )}
       </div>
 
-      {/* Author + Category */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Author + Category — stacked on mobile, side by side on sm+ */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="author" className="block text-sm text-gray-400 mb-1">Author *</label>
+          <label className="block text-sm text-gray-400 mb-2">Author *</label>
           <input
-            id="author"
-            name="author"
             value={author}
             onChange={(e) => setAuthor(e.target.value)}
             placeholder="John Doe"
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label htmlFor="category" className="block text-sm text-gray-400 mb-1">Category *</label>
+          <label className="block text-sm text-gray-400 mb-2">Category *</label>
           <select
-            id="category"
-            name="category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputClass}
           >
             <option value="">Select...</option>
             {categories.map((c) => (
@@ -294,19 +286,30 @@ export function PostForm({ post }: PostFormProps) {
         </div>
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && (
+        <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-4 py-3">
+          {error}
+        </p>
+      )}
 
-      <div className="flex items-center gap-3 pt-2">
+      {/* Actions — full width buttons on mobile */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 pb-6">
         <button
           onClick={handleSubmit}
           disabled={status === "loading" || uploading}
-          className="bg-white text-gray-950 px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="w-full sm:w-auto bg-white text-gray-950 px-6 py-3 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors disabled:opacity-50 active:scale-95"
         >
-          {uploading ? "Uploading image..." : status === "loading" ? "Saving..." : isEdit ? "Update Post" : "Publish Post"}
+          {uploading
+            ? "Uploading image..."
+            : status === "loading"
+            ? "Saving..."
+            : isEdit
+            ? "Update Post"
+            : "Publish Post"}
         </button>
         <button
           onClick={() => router.back()}
-          className="text-gray-400 hover:text-white text-sm transition-colors"
+          className="w-full sm:w-auto text-center text-gray-400 hover:text-white text-sm transition-colors py-3 sm:py-0"
         >
           Cancel
         </button>
