@@ -3,10 +3,30 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { DeletePostButton } from "@/components/delete-post-button";
-import { Search, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUpDown, Globe, FileText, Calendar } from "lucide-react";
 import type { Post } from "@/types/types";
 
 type SortKey = "date_desc" | "date_asc" | "views_desc" | "views_asc";
+
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (!status || status === "published") return (
+    <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+      <Globe className="h-3 w-3" /> Published
+    </span>
+  );
+  if (status === "draft") return (
+    <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-800 px-2 py-0.5 rounded-full whitespace-nowrap">
+      <FileText className="h-3 w-3" /> Draft
+    </span>
+  );
+  if (status === "scheduled") return (
+    <span className="flex items-center gap-1 text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+      <Calendar className="h-3 w-3" /> Scheduled
+    </span>
+  );
+  return null;
+}
 
 interface PostsListProps {
   posts: Post[];
@@ -88,9 +108,10 @@ export function PostsList({ posts }: PostsListProps) {
             className="bg-gray-900 border border-gray-800 rounded-xl px-4 py-4 flex flex-col gap-3"
           >
             <div className="flex items-start justify-between gap-3">
-              <p className="text-sm font-semibold text-white leading-snug line-clamp-2 flex-1">
-                {post.title}
-              </p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white leading-snug line-clamp-2">{post.title}</p>
+                <div className="mt-1"><StatusBadge status={post.status} /></div>
+              </div>
               <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-full whitespace-nowrap flex-shrink-0">
                 {post.category}
               </span>
@@ -146,8 +167,11 @@ export function PostsList({ posts }: PostsListProps) {
           <tbody>
             {filtered.map((post) => (
               <tr key={post.id} className="border-b border-gray-800 hover:bg-gray-900/60 transition-colors">
-                <td className="px-6 py-4 text-white font-medium max-w-xs truncate">
-                  {post.title}
+                <td className="px-6 py-4 max-w-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-medium truncate">{post.title}</span>
+                    <StatusBadge status={post.status} />
+                  </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded-full">

@@ -15,6 +15,12 @@ export interface Post {
   views: number;
   date: string;
   readTime: string;
+  // SEO fields
+  meta_title: string | null;
+  meta_description: string | null;
+  tags: string[] | null;
+  status: "published" | "draft" | "scheduled" | null;
+  scheduled_at: string | null;
 }
 
 export interface SiteConfig {
