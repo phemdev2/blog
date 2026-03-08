@@ -1,5 +1,4 @@
 /** @type {import('next').NextConfig} */
-
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -20,10 +19,15 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https://*.supabase.co",
-              "font-src 'self'",
+              // Allow Next.js runtime scripts
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel.app",
+              // Allow inline styles + Google Fonts
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              // Allow images from Supabase + Vercel
+              "img-src 'self' data: blob: https://*.supabase.co https://*.vercel.app https://blog-nine-lilac-51.vercel.app",
+              // Allow fonts from Google Fonts
+              "font-src 'self' https://fonts.gstatic.com",
+              // Allow Supabase API + websockets
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
             ].join("; "),
           },

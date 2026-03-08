@@ -3,7 +3,8 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ImagePlus, X, AlignLeft, AlignCenter, AlignRight, AlignJustify } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
+import { RichTextEditor } from "@/components/rich-text-editor";
 import type { Post } from "@/types/types";
 
 interface PostFormProps {
@@ -14,13 +15,11 @@ function slugify(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
-function calculateReadTime(content: string): string {
-  const words = content.replace(/<[^>]*>/g, "").trim().split(/\s+/).length;
+function calculateReadTime(html: string): string {
+  const words = html.replace(/<[^>]*>/g, "").trim().split(/\s+/).length;
   const minutes = Math.ceil(words / 200);
   return `${minutes} min read`;
 }
-
-type Alignment = "left" | "center" | "right" | "justify";
 
 export function PostForm({ post }: PostFormProps) {
   const router = useRouter();
@@ -31,8 +30,7 @@ export function PostForm({ post }: PostFormProps) {
   const [title, setTitle] = useState(post?.title ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? "");
-  const [content, setContent] = useState(post?.content?.join("\n\n") ?? "");
-  const [alignment, setAlignment] = useState<Alignment>("left");
+  const [contentHtml, setContentHtml] = useState(post?.content_html ?? "");
   const [author, setAuthor] = useState(post?.author ?? "");
   const [category, setCategory] = useState(post?.category ?? "");
   const [coverImage, setCoverImage] = useState<string>(post?.cover_image ?? "");
@@ -73,7 +71,8 @@ export function PostForm({ post }: PostFormProps) {
   }
 
   async function handleSubmit() {
-    if (!title || !slug || !content || !author || !category) {
+    const plainText = contentHtml.replace(/<[^>]*>/g, "").trim();
+    if (!title || !slug || !plainText || !author || !category) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -103,18 +102,17 @@ export function PostForm({ post }: PostFormProps) {
       setUploading(false);
     }
 
+    const content = plainText.split(/\n+/).map((p) => p.trim()).filter(Boolean);
+
     const payload = {
       title,
       slug,
       excerpt,
-      content: content.split("\n\n").map((p) => p.trim()).filter(Boolean),
-      content_html: `<div style="text-align:${alignment}">${content
-        .split("\n\n")
-        .map((p) => `<p>${p.trim()}</p>`)
-        .join("")}</div>`,
+      content,
+      content_html: contentHtml,
       author,
       category,
-      read_time: calculateReadTime(content),
+      read_time: calculateReadTime(contentHtml),
       user_id: session.user.id,
       cover_image: imageUrl || null,
     };
@@ -133,14 +131,6 @@ export function PostForm({ post }: PostFormProps) {
   }
 
   const categories = ["Technology", "Design", "Business", "Lifestyle", "Other"];
-
-  const alignments: { value: Alignment; icon: React.ReactNode }[] = [
-    { value: "left", icon: <AlignLeft className="h-4 w-4" /> },
-    { value: "center", icon: <AlignCenter className="h-4 w-4" /> },
-    { value: "right", icon: <AlignRight className="h-4 w-4" /> },
-    { value: "justify", icon: <AlignJustify className="h-4 w-4" /> },
-  ];
-
   const inputClass =
     "w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
 
@@ -216,50 +206,22 @@ export function PostForm({ post }: PostFormProps) {
         />
       </div>
 
-      {/* Content */}
+      {/* Rich Text Editor */}
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <label className="text-sm text-gray-400">
-            Content *{" "}
-            <span className="text-gray-600 text-xs hidden sm:inline">
-              (blank line = new paragraph)
-            </span>
-          </label>
-          {/* Alignment toolbar */}
-          <div className="flex items-center gap-1 bg-gray-900 border border-gray-700 rounded-lg p-1">
-            {alignments.map(({ value, icon }) => (
-              <button
-                key={value}
-                onClick={() => setAlignment(value)}
-                className={`p-2 rounded transition-colors ${
-                  alignment === value
-                    ? "bg-white text-gray-950"
-                    : "text-gray-400 hover:text-white"
-                }`}
-                title={`Align ${value}`}
-              >
-                {icon}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
+        <label className="block text-sm text-gray-400 mb-2">Content *</label>
+        <RichTextEditor
+          value={contentHtml}
+          onChange={setContentHtml}
           placeholder="Write your post content here..."
-          rows={14}
-          style={{ textAlign: alignment }}
-          className={`${inputClass} resize-none leading-relaxed`}
         />
-        {content && (
+        {contentHtml && (
           <p className="text-xs text-gray-500 mt-1">
-            Estimated read time: {calculateReadTime(content)}
+            Estimated read time: {calculateReadTime(contentHtml)}
           </p>
         )}
       </div>
 
-      {/* Author + Category — stacked on mobile, side by side on sm+ */}
+      {/* Author + Category */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm text-gray-400 mb-2">Author *</label>
@@ -270,7 +232,6 @@ export function PostForm({ post }: PostFormProps) {
             className={inputClass}
           />
         </div>
-
         <div>
           <label className="block text-sm text-gray-400 mb-2">Category *</label>
           <select
@@ -292,7 +253,7 @@ export function PostForm({ post }: PostFormProps) {
         </p>
       )}
 
-      {/* Actions — full width buttons on mobile */}
+      {/* Actions */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 pb-6">
         <button
           onClick={handleSubmit}
